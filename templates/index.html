@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="https://img.icons8.com/?size=100&id=1340&format=png" type="image/png">
+    <title>VM Configuration</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+    <style>
+        body {
+            padding-bottom: 50px;
+        }
+        #banner {
+            background-color: #007bff;
+            color: white;
+            padding: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- Banner -->
+    <div id="banner">Loading...</div>
+    <!-- Resource Table -->
+    <div class="container mt-3">
+        <h4>Available Resources on Hosts</h4>
+        <table class="table table-striped" id="resourceTable">
+            <thead>
+                <tr>
+                    <th>Host</th>
+                    <th>Cluster</th>
+                    <th>Available CPU (GHz)</th>
+                    <th>Available RAM (GB)</th>
+                    <th>Available Disk (GB)</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    <div id="alertBox" class="position-fixed top-0 end-0 p-3" style="z-index: 1050; max-width: 300px;"></div>
+    <div class="container mt-4">
+        <div class="row">
+            <!-- Input Form -->
+            <div class="col-md-6">
+                <h3>VM Configuration</h3>
+                <form id="vmForm">
+                    <div class="mb-3">
+                        <label for="NameVM" class="form-label">VM Name (No space allowed)</label>
+                        <input type="text" class="form-control" id="NameVM" name="NameVM" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="SourceVM" class="form-label">Source VM</label>
+                        <select class="form-select" id="SourceVM" name="SourceVM" required>
+                            <option value="Z-Template-Ubuntu22">Z-Template-Ubuntu22</option>
+                            <option value="Z-Template-Cent-9">Z-Template-Cent-9</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="Count" class="form-label">Count</label>
+                        <input type="number" class="form-control" id="Count" name="Count" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="CPU" class="form-label">CPU</label>
+                        <input type="number" class="form-control" id="CPU" name="CPU" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="RAM" class="form-label">RAM (GB)</label>
+                        <input type="number" class="form-control" id="RAM" name="RAM" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="Disk" class="form-label">Disk (GB)</label>
+                        <input type="number" class="form-control" id="Disk" name="Disk" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="Datastore" class="form-label">Datastore</label>
+                        <input type="text" class="form-control" id="Datastore" name="Datastore" value="datastore1" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="Network" class="form-label">Network</label>
+                        <input type="text" class="form-control" id="Network" name="Network" value="VM Network" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="IPList" class="form-label">IP List (comma-separated)</label>
+                        <input type="text" class="form-control" id="IPList" name="IPList" value="192.168.10." required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="DNS" class="form-label">DNS (comma-separated)</label>
+                        <input type="text" class="form-control" id="DNS" name="DNS" value="8.8.8.8" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="SubnetMask" class="form-label">Subnet Mask</label>
+                        <input type="text" class="form-control" id="SubnetMask" name="SubnetMask" value="255.255.255.0" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="Gateway" class="form-label">Gateway</label>
+                        <input type="text" class="form-control" id="Gateway" name="Gateway" value="192.168.10.1" required>
+                    </div>
+                    <button type="button" class="btn btn-primary" id="addVM">Add VM</button>
+                    <button type="button" class="btn btn-success" id="finalizeButton">Finalize</button>
+                    <button type="button" class="btn btn-danger" id="deleteAllButton">Delete All</button>
+                    <button type="button" class="btn btn-warning" id="runButton" style="display: none;">Run</button>
+                </form>
+            </div>
+
+        <!-- VM List -->
+        <div class="col-md-6">
+            <h3>Configured VMs</h3>
+            <table class="table" id="vmTable">
+                <thead>
+                    <tr>
+                        <th>VM Name</th>
+                        <th>Count</th>
+                        <th>CPU/RAM/Disk</th>
+                        <th>IP Address</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <!-- Finalized VM Specs -->
+        <div class="row mt-5" id="finalizedSpecsSection" style="display: none;">
+            <div class="col-md-12">
+                <h3>Finalized VM Specifications</h3>
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>VM Name</th>
+                            <th>CPU/RAM/Disk</th>
+                            <th>Network</th>
+                            <th>IP Address</th>
+                        </tr>
+                    </thead>
+                    <tbody id="finalizedSpecsTable"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            // Function to show alerts
+            function showAlert(message, type = "info") {
+                const alertId = `alert-${Date.now()}`;
+                const alertHtml = `
+                    <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show mb-2" role="alert">
+                        ${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>`;
+                $('#alertBox').append(alertHtml);
+                setTimeout(() => { $(`#${alertId}`).alert('close'); }, 5000);
+            }
+
+            // Fetch available resources and populate the table
+            function fetchHostResources() {
+                $.get('/get_host_resources', function (data) {
+                    const tableBody = $('#resourceTable tbody');
+                    tableBody.empty();
+                    if (data.error) {
+                        tableBody.append(`
+                            <tr>
+                                <td colspan="5" class="text-danger text-center">${data.error}</td>
+                            </tr>
+                        `);
+                    } else if (data.length === 0) {
+                        tableBody.append(`
+                            <tr>
+                                <td colspan="5" class="text-center">No host data available.</td>
+                            </tr>
+                        `);
+                    } else {
+                        data.forEach((host) => {
+                            tableBody.append(`
+                                <tr>
+                                    <td>${host.Host}</td>
+                                    <td>${host.Cluster}</td>
+                                    <td>${host['Available CPU (GHz)']}</td>
+                                    <td>${host['Available RAM (GB)']}</td>
+                                    <td>${host['Available Disk (GB)']}</td>
+                                </tr>
+                            `);
+                        });
+                    }
+                }).fail(function () {
+                    const tableBody = $('#resourceTable tbody');
+                    tableBody.empty();
+                    tableBody.append(`
+                        <tr>
+                            <td colspan="5" class="text-danger text-center">Failed to fetch host resources.</td>
+                        </tr>
+                    `);
+                });
+            }
+
+            // Function to fetch vSphere host and update banner
+            function updateBanner() {
+                $.get('/get_vsphere_host', function (data) {
+                    $('#banner').text(`Connected to vSphere Host: ${data.host}`);
+                }).fail(function () {
+                    $('#banner').text('Error: Unable to fetch vSphere Host');
+                    $('#banner').css('background-color', 'red');
+                });
+            }
+
+            // Function to refresh the VM table
+            function refreshVMTable() {
+                $.get('/get_configured_vms', function (data) {
+                    const tableBody = $('#vmTable tbody');
+                    tableBody.empty();
+                    data.forEach((vm, index) => {
+                        tableBody.append(`
+                            <tr>
+                                <td>${vm.NameVM}</td>
+                                <td>${vm.Count}</td>
+                                <td>${vm.CPU}/${vm.RAM}/${vm.Disk}</td>
+                                <td>${vm.IPList.join(', ')}</td>
+                                <td>
+                                    <button class="btn btn-danger btn-sm remove-vm" data-index="${index}">Remove</button>
+                                </td>
+                            </tr>
+                        `);
+                    });
+
+                    // Attach click handler for remove buttons
+                    $('.remove-vm').click(function () {
+                        const vmIndex = $(this).data('index');
+                        $.post(`/remove_vm/${vmIndex}`, function (response) {
+                            showAlert(response.message, "success");
+                            refreshVMTable();
+                        }).fail(function () {
+                            showAlert('Failed to remove VM. Please try again.', "danger");
+                        });
+                    });
+                });
+            }
+
+            // Function to refresh the finalized VM table
+            function refreshFinalizedVMTable() {
+                $.get('/get_finalized_vms', function (data) {
+                    const tableBody = $('#finalizedSpecsTable');
+                    tableBody.empty();
+                    data.forEach((vm) => {
+                        tableBody.append(`
+                            <tr>
+                                <td>${vm.NameVM}</td>
+                                <td>${vm.CPU}/${vm.RAM}/${vm.Disk}</td>
+                                <td>${vm.Network}</td>
+                                <td>${vm.IP}</td>
+                            </tr>
+                        `);
+                    });
+                });
+            }
+
+            // Add VM button handler
+            $('#addVM').click(function () {
+                const formData = $('#vmForm').serialize();
+                $.post('/submit', formData, function (response) {
+                    showAlert(response.message, "success");
+                    refreshVMTable();
+                }).fail(function () {
+                    showAlert('Failed to add VM. Please try again.', "danger");
+                });
+            });
+
+            // Finalize button handler
+            $('#finalizeButton').click(function () {
+                $.post('/finalize', function (response) {
+                    showAlert(response.message, "success");
+                    refreshFinalizedVMTable();
+                    $('#finalizedSpecsSection').show();
+                    $('#runButton').show();
+                }).fail(function () {
+                    showAlert('Failed to finalize VMs. Please try again.', "danger");
+                });
+            });
+
+            // Run button handler
+            $('#runButton').click(function () {
+                if (confirm('Are you sure you want to run the creation process?')) {
+                    $.post('/create', function (response) {
+                        if (response.message) showAlert(response.message, "success");
+                        if (response.output) {
+                            response.output.split('\n').forEach((log) => {
+                                if (log.trim()) showAlert(log, "info");
+                            });
+                        }
+                    }).fail(function () {
+                        showAlert('An error occurred while running the process.', "danger");
+                    });
+                }
+            });
+
+            // Delete All button handler
+            $('#deleteAllButton').click(function () {
+                $.post('/clear_all', function (response) {
+                    showAlert(response.message, "success");
+                    refreshVMTable();
+                    $('#finalizedSpecsTable').empty();
+                    $('#finalizedSpecsSection').hide();
+                    $('#runButton').hide();
+                }).fail(function () {
+                    showAlert('Failed to clear configurations. Please try again.', "danger");
+                });
+            });
+
+            // Initial table refresh
+            updateBanner();
+            refreshVMTable();
+            refreshFinalizedVMTable();
+            fetchHostResources();
+        });
+    </script>
+</body>
+</html>
